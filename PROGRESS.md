@@ -288,3 +288,8 @@ vynx.dev/JB (Vynx Jailbreak v2.0, WebKitty 框架 + Relapse 集成, 多语言含
 | `/tmp/TitaniaPy/` | TitaniaPy + V4 源码/ELF |
 | `/tmp/ps5-pup-decrypt/` | zecoxao 工具源码 |
 | `~/DEV/ps5-webkit-autoloader/` | 起点仓库(含 remote-loader 子模块) |
+
+## 发布记录
+
+2026-10-19 研究成果已发布为公开仓库: https://github.com/wooluo/ps5-firmware-research
+(英文 README + 中文日志/报告 + 工具; 版权二进制与全量伪代码不入库, 可用工具再生成)
