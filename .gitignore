@@ -1,0 +1,21 @@
+# 索尼版权二进制一律不入库(固件/内核dump/头部样本)
+out/
+*.PUP
+*.pup
+kernel-*.bin
+kernel-*.bin.gz
+pup_head_*.bin
+inner_*.bin
+probe_*.bin
+updatelist_*.xml
+*.elf
+
+# 反编译全量伪代码属派生作品, 不入库; 用 tools/ 脚本 + 公开二进制可再生成
+*_decomp.c
+*_targets.c
+
+# 本地环境
+.DS_Store
+build/
+ps5.rep/
+ps5.gpr
