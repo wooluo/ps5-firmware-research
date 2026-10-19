@@ -40,7 +40,7 @@ Analysis of the community-released live RAM capture ([terrafirma2021/ps5-13.60-k
 
 ### 4. Relapse exploit chain — complete mechanism map
 
-Cross-referencing the public [Relapse-Exploit](https://github.com/ntfargo/Relapse-Exploit) source against the offset tables closed every open question — see [PROGRESS.md](PROGRESS.md) §前沿快报 2:
+Cross-referencing the public [Relapse-Exploit](https://github.com/ntfargo/Relapse-Exploit) source against the offset tables closed every open question — see [PROGRESS.md](PROGRESS.md) §6:
 
 | Offset-table field | Actual mechanism (source-verified) |
 |---|---|
