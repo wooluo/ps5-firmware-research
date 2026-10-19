@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PS5 remote-loader offset 表跨固件分析器
+// PS5 remote-loader offset tables: cross-firmware analysis器
 // 用法: node analyze_offsets.mjs <remote-loader-checkout> <输出目录>
 // 直接 eval 各固件的 offsets/*.js（window 垫片），拿到 KRW/SYMBOLS/常量后做横向对比。
 
@@ -49,17 +49,17 @@ function fwKey(fw) { // 版本排序键: "13.60" -> 13.60
 const files = readdirSync(offsetsDir).filter(f => f.endsWith('.js')).sort((a, b) => fwKey(a) - fwKey(b));
 const rows = files.map(f => parseFw(join(offsetsDir, f)));
 
-// ── 1. 主表：每固件关键内核地址 ────────────────────────────────
-let md = `# PS5 remote-loader offset 表跨固件分析\n\n源: ${offsetsDir} (${rows.length} 个固件版本)\n生成: ${new Date().toISOString()}\n\n`;
+// ── 1. 主表：每固件关键kernel addrs ────────────────────────────────
+let md = `# PS5 remote-loader offset tables: cross-firmware analysis\n\nSource: ${offsetsDir} (${rows.length} firmware versions)\nGenerated: ${new Date().toISOString()}\n\n`;
 
-md += `## 1. 内核关键地址总表\n\n| FW | kernelData | allproc | rootvnode | securityFlags | KASLR mode | rodata探针 |\n|---|---|---|---|---|---|---|\n`;
+md += `## 1. Key kernel addresses\n\n| FW | kernelData | allproc | rootvnode | securityFlags | KASLR mode | rodata probe |\n|---|---|---|---|---|---|---|\n`;
 for (const r of rows) {
   const k = r.KRW || {};
   md += `| ${r.fw} | ${hex(k.kernelData)} | ${hex(k.allproc)} | ${hex(k.rootvnode)} | ${hex(r.consts.OFFSET_KERNEL_SECURITY_FLAGS)} | ${k.kaslr?.mode || '?'} | ${(k.rodataProbe?.text || '').replace(/\0.*$/, '').slice(0, 24) || '?'} |\n`;
 }
 
 // ── 2. 相邻固件 diff：哪些字段动了 ────────────────────────────
-md += `\n## 2. 相邻固件变化矩阵\n\n哪些类别的 offset 在每个相邻版本对之间发生了变化（Sony 重编译/加固的风向标）:\n\n| 版本对 | 内核地址 | KASLR | proc布局 | ucred布局 | libkernel符号 | libc符号 | ROP gadgets | sysctl表 |\n|---|---|---|---|---|---|---|---|---|\n`;
+md += `\n## 2. Adjacent-firmware change matrix\n\nWhich offset categories changed between adjacent firmware pairs (indicators of Sony recompiles/hardening):\n\n| pair | kernel addrs | KASLR | proc layout | ucred layout | libkernel syms | libc syms | ROP gadgets | sysctl oids |\n|---|---|---|---|---|---|---|---|---|\n`;
 for (let i = 1; i < rows.length; i++) {
   const a = rows[i - 1], b = rows[i];
   const ka = a.KRW || {}, kb = b.KRW || {};
@@ -87,34 +87,34 @@ function epochs(pick) {
   }
   return groups;
 }
-md += `\n## 3. 内核结构体布局纪元\n\n布局相同的连续固件归为同一纪元（candidate 文件 9.05/11.40 无 KRW 块，不参与分组）:\n\n`;
+md += `\n## 3. Kernel struct layout epochs\n\n布局相同的连续固件归为同一纪元（candidate 文件 9.05/11.40 无 KRW 块，不参与分组）:\n\n`;
 for (const [name, pick] of [['proc (进程结构)', k => k.proc], ['ucred (凭证结构)', k => k.ucred], ['filedesc (文件描述符)', k => k.filedesc], ['dynlib (动态库限制)', k => k.dynlib], ['sysCoreAuthId', k => k.sysCoreAuthId]]) {
   const es = epochs(pick);
-  md += `**${name}** — ${es.length} 个纪元: ${es.map(e => e.fws.length > 2 ? `${e.fws[0]}–${e.fws[e.fws.length - 1]}` : e.fws.join(',')).join(' | ')}\n\n`;
+  md += `**${name}** — ${es.length} epochs: ${es.map(e => e.fws.length > 2 ? `${e.fws[0]}–${e.fws[e.fws.length - 1]}` : e.fws.join(',')).join(' | ')}\n\n`;
 }
 
-// ── 4. KASLR 绕过方式演变 ─────────────────────────────────────
-md += `## 4. KASLR 绕过方式演变\n\n| FW | mode | retStatic |\n|---|---|---|\n`;
+// ── 4. KASLR bypass evolution ─────────────────────────────────────
+md += `## 4. KASLR bypass evolution\n\n| FW | mode | retStatic |\n|---|---|---|\n`;
 for (const r of rows) md += `| ${r.fw} | ${r.KRW?.kaslr?.mode || '?'} | ${hex(r.KRW?.kaslr?.retStatic)} |\n`;
 
 // ── 5. 特权提升目标（提权语义速查） ──────────────────────────
 const sample = rows.find(r => r.fw === '13.60') || rows[rows.length - 1];
-md += `\n## 5. 提权相关目标（${sample.fw} 为例）\n\n\`\`\`json\n`;
+md += `\n## 5. Privilege-escalation targets (${sample.fw}, for example)\n\n\`\`\`json\n`;
 md += JSON.stringify({ sysCoreAuthId: sample.KRW.sysCoreAuthId, ucred: sample.KRW.ucred, securityFlagsRelated: { securityFlags: sample.consts.OFFSET_KERNEL_SECURITY_FLAGS, targetId: 'securityFlags+0x09', qaFlags: 'securityFlags+0x24', utokenFlags: 'securityFlags+0x8C' } }, null, 2);
 md += `\n\`\`\`\n`;
 
 // ── 6. sysctl OID 腐化原语（内核读写怎么来的） ───────────────
-md += `\n## 6. sysctl OID 腐化原语配置演变\n\nPoops/slopkit 链的内核读写原语 = 腐蚀 sysctl 树中的 OID 节点。各固件的节点配置:\n\n| FW | oid.a | oid.b | oid.c | walkCounter | aio\n|---|---|---|---|---|---|\n`;
+md += `\n## 6. sysctl OID corruption primitive config\n\nPoops/slopkit : the kernel R/W primitive = corrupting sysctl tree OID nodes. Per-firmware node config:\n\n| FW | oid.a | oid.b | oid.c | walkCounter | aio\n|---|---|---|---|---|---|\n`;
 for (const r of rows) {
   const o = r.KRW?.oid || {};
   md += `| ${r.fw} | ${o.a ? '√' : '—'} | ${o.b ? '√' : '—'} | ${o.c ? `mib=${JSON.stringify(o.c.mib)}` : '—'} | ${r.KRW?.walkCounter ? `mib=${JSON.stringify(r.KRW.walkCounter.mib)}` : '—'} | ${r.KRW?.aio ? '√' : '—'} |\n`;
 }
 
 // ── 7. syscall 覆盖面 ────────────────────────────────────────
-md += `\n## 7. 攻击面覆盖\n\n每固件预定位的 syscall wrapper 数量与 ROP gadget 数量:\n\n| FW | syscalls | gadgets |\n|---|---|---|\n`;
+md += `\n## 7. Attack-surface coverage\n\nPre-located syscall wrappers and ROP gadgets per firmware:\n\n| FW | syscalls | gadgets |\n|---|---|---|\n`;
 for (const r of rows) md += `| ${r.fw} | ${r.syscallCount} | ${r.gadgetCount} |\n`;
 
-// 机器可读 JSON
+// Machine-readable JSON
 writeFileSync(join(outDir, 'offsets_analysis.json'), JSON.stringify(rows.map(r => ({
   fw: r.fw, KRW: r.KRW, SYMBOLS: r.SYMBOLS, consts: r.consts,
   syscallCount: r.syscallCount, gadgetCount: r.gadgetCount,

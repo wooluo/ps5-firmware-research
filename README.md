@@ -2,7 +2,7 @@
 
 Independent reverse-engineering research notes and tooling for PS5 firmware/kernel analysis, produced with byte-level verification against live data. Everything here studies **public artifacts** (open-source exploit repositories, Sony's public CDN, community-released memory captures) — no copyrighted firmware binaries or keys are included in this repo.
 
-> 中文版完整研究日志见 [PROGRESS.md](PROGRESS.md)（full Chinese research log）。
+> **Languages:** English is primary. Full Chinese research log: [docs/PROGRESS.zh.md](docs/PROGRESS.zh.md); each report has a `*.zh.md` Chinese twin next to it.
 
 ## Key Findings
 

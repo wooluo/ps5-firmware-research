@@ -1,11 +1,11 @@
-# PS5 remote-loader offset 表跨固件分析
+# PS5 remote-loader offset tables: cross-firmware analysis
 
-源: /Users/wooluo/DEV/ps5-webkit-autoloader/third_party/ps5-webkit-remote-loader/offsets (35 个固件版本)
-生成: 2026-10-19T02:53:55.220Z
+Source: /Users/wooluo/DEV/ps5-webkit-autoloader/third_party/ps5-webkit-remote-loader/offsets (35 firmware versions)
+Generated: 2026-10-19T08:05:20.323Z
 
-## 1. 内核关键地址总表
+## 1. Key kernel addresses
 
-| FW | kernelData | allproc | rootvnode | securityFlags | KASLR mode | rodata探针 |
+| FW | kernelData | allproc | rootvnode | securityFlags | KASLR mode | rodata probe |
 |---|---|---|---|---|---|---|
 | 7.00 | 0xc50000 | 0x34a9d50 | 0x3d17510 | 0x1718064 | rtmsg2 | _aio_submit_cmd |
 | 7.01 | 0xc50000 | 0x34a9d50 | 0x3d17510 | 0x1718064 | rtmsg2 | _aio_submit_cmd |
@@ -43,11 +43,11 @@
 | 13.42 | 0xcb0000 | 0x3579e80 | 0x3de7510 | 0x1a49064 | rtmsg2 | _aio_submit_cmd |
 | 13.60 | 0xcc0000 | 0x3589e80 | 0x3e0b510 | 0x1a5c064 | rtmsg2 | _aio_submit_cmd |
 
-## 2. 相邻固件变化矩阵
+## 2. Adjacent-firmware change matrix
 
-哪些类别的 offset 在每个相邻版本对之间发生了变化（Sony 重编译/加固的风向标）:
+Which offset categories changed between adjacent firmware pairs (indicators of Sony recompiles/hardening):
 
-| 版本对 | 内核地址 | KASLR | proc布局 | ucred布局 | libkernel符号 | libc符号 | ROP gadgets | sysctl表 |
+| pair | kernel addrs | KASLR | proc layout | ucred layout | libkernel syms | libc syms | ROP gadgets | sysctl oids |
 |---|---|---|---|---|---|---|---|---|
 | 7.00→7.01 | · | · | · | · | · | · | · | · |
 | 7.01→7.20 | · | **Δ** | · | · | **Δ** | · | · | **Δ** |
@@ -84,21 +84,21 @@
 | 13.40→13.42 | · | · | · | · | · | · | · | · |
 | 13.42→13.60 | **Δ** | **Δ** | · | · | · | · | · | **Δ** |
 
-## 3. 内核结构体布局纪元
+## 3. Kernel struct layout epochs
 
 布局相同的连续固件归为同一纪元（candidate 文件 9.05/11.40 无 KRW 块，不参与分组）:
 
-**proc (进程结构)** — 3 个纪元: 7.00–9.60 | 10.00–11.60 | 12.00–13.60
+**proc (进程结构)** — 3 epochs: 7.00–9.60 | 10.00–11.60 | 12.00–13.60
 
-**ucred (凭证结构)** — 1 个纪元: 7.00–13.60
+**ucred (凭证结构)** — 1 epochs: 7.00–13.60
 
-**filedesc (文件描述符)** — 1 个纪元: 7.00–13.60
+**filedesc (文件描述符)** — 1 epochs: 7.00–13.60
 
-**dynlib (动态库限制)** — 1 个纪元: 7.00–13.60
+**dynlib (动态库限制)** — 1 epochs: 7.00–13.60
 
-**sysCoreAuthId** — 1 个纪元: 7.00–13.60
+**sysCoreAuthId** — 1 epochs: 7.00–13.60
 
-## 4. KASLR 绕过方式演变
+## 4. KASLR bypass evolution
 
 | FW | mode | retStatic |
 |---|---|---|
@@ -138,7 +138,7 @@
 | 13.42 | rtmsg2 | 0xad8aa0 |
 | 13.60 | rtmsg2 | 0xae2da0 |
 
-## 5. 提权相关目标（13.60 为例）
+## 5. Privilege-escalation targets (13.60, for example)
 
 ```json
 {
@@ -167,9 +167,9 @@
 }
 ```
 
-## 6. sysctl OID 腐化原语配置演变
+## 6. sysctl OID corruption primitive config
 
-Poops/slopkit 链的内核读写原语 = 腐蚀 sysctl 树中的 OID 节点。各固件的节点配置:
+Poops/slopkit : the kernel R/W primitive = corrupting sysctl tree OID nodes. Per-firmware node config:
 
 | FW | oid.a | oid.b | oid.c | walkCounter | aio
 |---|---|---|---|---|---|
@@ -209,9 +209,9 @@ Poops/slopkit 链的内核读写原语 = 腐蚀 sysctl 树中的 OID 节点。�
 | 13.42 | √ | √ | mib=[9,8] | mib=[9,7] | √ |
 | 13.60 | √ | √ | mib=[9,8] | mib=[9,7] | √ |
 
-## 7. 攻击面覆盖
+## 7. Attack-surface coverage
 
-每固件预定位的 syscall wrapper 数量与 ROP gadget 数量:
+Pre-located syscall wrappers and ROP gadgets per firmware:
 
 | FW | syscalls | gadgets |
 |---|---|---|
