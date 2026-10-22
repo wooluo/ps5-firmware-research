@@ -150,11 +150,29 @@ app) for a clean return to stock UI. Details: `reports/re_decomp_report.md`.
 
 - **Frontier 1 (14.10 WebKit)**: pastawithpesto/PS5-14.10-Jailbreak-Research
   — CVE-2026-64784 (JSC bug 317632, UnlinkedMetadataTable::finalize overflow:
-  100KB reserved vs 4.29GB written). Memory corruption confirmed on device
-  (p146), **blocked by the 4.29GB sweep**; live leads: FreeType loca-table
-  OOB read (device-confirmed, potential ASLR leak), CSSFontFace UAF
-  (source-verified), and an "offsetless" runtime-derive loader design.
-  Relapse CVEs all patched on 14.10 (explains the 13.60 ceiling).
+  100KB reserved vs 4.29GB written), blocked by the 4.29GB sweep; leads:
+  FreeType loca-table OOB read (device-confirmed), and an "offsetless"
+  runtime-derive loader design. Relapse CVEs all patched on 14.10.
+  **2026-10-20 update:** the team's own V480 definitive test retracted the
+  famous p146 "memory corruption" (.length=81400) as a **false positive** —
+  the probe's string literal was 814 chars, so 814×100 = 81400 was simply
+  the real string length. Credit to them for publishing the retraction.
+  CSSFontFace UAF is now the lead bug with a full writeup and
+  **CVE-2026-43715** assigned.
+- **Frontier 1b (14.10 Lua/game-save path)**: ZigZagBoi1/PS5-14.10-Research
+  — a large open community effort (664 probes, 596 commits, 75+ merged PRs)
+  attacking from a **game-save exploit → Lua 5.1 loader** (TCP 9026) plus a
+  WebKit crash corpus. Achieved **userland thread-ROP**: `thr_create(430)`
+  with CS=0x43/SS=0x3B and full GP register control; multi-gadget chains
+  (pop rdi, pop rax, mov [rdi],eax; ret) confirmed — a thread wrote
+  0xDEADBEEF to a controlled address (probes 80a–80k, 156c/156d). This is
+  the basis of the viral "native code execution confirmed in 14.10" posts —
+  real, but it is userland ROP **inside the already-Lua-compromised
+  process**, not a kernel breach. Their own status: "kernel read/write on
+  14.10 is not demonstrated"; blockers = kernel ASLR + a validated kernel
+  bug. Impressive dead-end discipline (RDMSR blocked, SMAP enforced,
+  fork/rfork/thr_new blocked, sysent ends at 676, UMTX SHM stubbed,
+  netcontrol UAF dead).
 - **Frontier 2 (Relapse standalone)**: ntfargo/Relapse-Exploit — full chain
   closed: every offset-table field mapped to its mechanism (rtmsg2 leak,
   aio_multi_wait UAF race, flipOidKind decrement flip, sysctl window). See
